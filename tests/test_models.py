@@ -6,7 +6,9 @@ import numpy as np
 import pytest
 
 from log_anomaly.models.iforest import IsolationForestModel
+from log_anomaly.models.pca_autoencoder import PCAAutoencoder
 from log_anomaly.models.rarity import RarityBaseline
+from log_anomaly.models.registry import MODEL_NAMES, TrainedModel, build_model, fit_model
 
 NAMES = ("fail_count", "distinct_users", "off_hours", "bytes")
 
@@ -77,3 +79,46 @@ def test_iforest_unfitted_raises_and_retains_only_a_sample() -> None:
     model = IsolationForestModel().fit(normal_matrix(5000), NAMES)
     assert model.train_matrix_ is not None
     assert len(model.train_matrix_) == 2000
+
+
+def correlated_matrix(rows: int = 400, seed: int = 5) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    base = rng.normal(0, 1, rows)
+    return np.column_stack(
+        [base, base + rng.normal(0, 0.1, rows), rng.normal(0, 1, rows), rng.normal(0, 1, rows)]
+    )
+
+
+def test_pca_ae_scores_off_subspace_row_above_normals() -> None:
+    matrix = correlated_matrix()
+    model = PCAAutoencoder(max_components=2).fit(matrix, NAMES)
+    outlier = np.array([[5.0, -5.0, 0.0, 0.0]])  # breaks the learned correlation
+    assert model.score(outlier)[0] > np.quantile(model.score(matrix), 0.99)
+    contributions = model.contributions(outlier)
+    np.testing.assert_allclose(contributions.sum(axis=1), model.score(outlier))
+
+
+def test_pca_ae_respects_max_components() -> None:
+    model = PCAAutoencoder(variance_threshold=0.999, max_components=1).fit(
+        normal_matrix(), NAMES
+    )
+    assert model.n_components == 1
+
+
+def test_registry_builds_fits_and_round_trips(tmp_path) -> None:
+    assert MODEL_NAMES == ("rarity", "iforest", "pca-ae")
+    for name in MODEL_NAMES:
+        assert build_model(name).name == name
+    trained = fit_model("rarity", normal_matrix(), NAMES, metadata={"corpus": "test"})
+    path = trained.save(tmp_path / "model.joblib")
+    loaded = TrainedModel.load(path)
+    assert loaded.feature_names == NAMES
+    assert loaded.metadata == {"corpus": "test"}
+    np.testing.assert_allclose(
+        loaded.score(normal_matrix(5)), trained.score(normal_matrix(5))
+    )
+
+
+def test_registry_rejects_unknown_model() -> None:
+    with pytest.raises(KeyError, match="unknown model"):
+        build_model("nope")
