@@ -233,6 +233,7 @@ def evaluate_all(
     validation_fraction: float = 0.2,
     exclude_types: Sequence[str] = (),
     clean_training: bool = False,
+    alert_budget: float = 20.0,
 ) -> list[EvaluationResult]:
     """Evaluate every model on the same split."""
     if feature_set is None:
@@ -250,6 +251,7 @@ def evaluate_all(
                 validation_fraction=validation_fraction,
                 exclude_types=exclude_types,
                 clean_training=clean_training,
+                alert_budget=alert_budget,
             )
         )
     return results
