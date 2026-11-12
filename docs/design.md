@@ -1,6 +1,8 @@
 # Design: host-based log anomaly detection
 
-Status: written before implementation, revised after the first evaluation run.
+Status: written before implementation, revised after the first evaluation
+run; implementation complete — results in [REPORT.md](../REPORT.md). Feature
+names below match `log_anomaly.features.FEATURE_NAMES` as shipped.
 Author: Zenco (github.com/notzenco).
 
 ---
@@ -120,17 +122,18 @@ what an online scorer would have produced at that timestamp.
 
 | Feature | Scope / window | Signal |
 | --- | --- | --- |
-| `auth_fail_count` | user, 1 h | failure burst against one account |
+| `auth_fail_count_1h` | user, 1 h | failure burst against one account |
 | `auth_fail_count_10m` | user, 10 m | tight brute-force burst |
 | `src_fail_count_10m` | source, 10 m | one scanner hammering many accounts |
+| `src_fail_count_1h` | source, 1 h | same, over the longer window |
 | `src_distinct_users_1h` | source, 1 h | credential stuffing (many accounts, one source) |
 | `src_user_entropy_1h` | source, 1 h | entropy of the user mix per source, high = spread out |
-| `user_fail_zscore` | user, 1 h | failures relative to that user's own history |
-| `user_success_count_1h` | user, 1 h | login burst after success |
+| `auth_fail_count_zscore` | user, causal running stats | failures relative to that user's own history |
+| `login_count_1h` | user, 1 h | login burst (accept + session-open deduplicated per pid) |
 | `user_distinct_hosts_1h` | user, 1 h | one account touching many machines |
 | `new_user_host_pair` | user×host, lifetime | first time this account appears on this host |
 | `new_src_for_user` | user×source, lifetime | first time this source is seen for this account |
-| `unknown_user` | user, lifetime | account never seen in the training period |
+| `unknown_user` | user, lifetime-to-date | account not seen earlier in the stream |
 | `off_hours` | user, learned hour profile | login outside the account's learned working hours |
 | `hour_profile_distance` | user, learned hour profile | circular distance from the account's modal hour |
 | `root_activity` | — | activity attributed to `root` |
@@ -140,8 +143,8 @@ what an online scorer would have produced at that timestamp.
 
 | Feature | Scope / window | Signal |
 | --- | --- | --- |
-| `proc_pair_novelty` | (parent, child) pair, lifetime | rarity of the process-parent pair; large when never observed |
-| `proc_pair_seen` | (parent, child) pair | binary: pair never seen in training |
+| `proc_pair_rarity` | (parent, child) pair, lifetime-to-date | −log count of the pair; large when rarely observed |
+| `proc_pair_is_new` | (parent, child) pair | binary: pair not seen earlier in the stream |
 | `proc_new_for_user` | (user, process) | this account has never run this program |
 | `proc_freq_rarity` | (user, process) | −log of observed frequency for this account |
 
@@ -155,18 +158,24 @@ what an online scorer would have produced at that timestamp.
 | `net_bytes_sent_zscore` | process, 1 h | bytes sent relative to that app's history |
 | `net_total_bytes_1h` | process, 1 h | absolute volume in the window |
 
+Six one-hot context features (`type_auth_failure`, `type_auth_success`,
+`type_session`, `type_sudo`, `type_process`, `type_network`) complete the
+31-feature matrix, so models can condition on event kind.
+
 ### 3.4 Design rules
 
 - **No label leakage.** Features are computed from the event stream only. The
   synthetic labels live in a separate file and are never read during feature
   extraction.
-- **Reference statistics come from the training period only.** Whether a
-  `(user, host)` pair is "new" is decided by the *training* baseline, not by
-  the full file, otherwise the test window leaks into the model.
+- **Model fitting uses the training period only.** Scalers, PCA, the forest
+  and the rarity distributions are fit on training rows. Feature *state*
+  (seen pairs, running statistics, hour profiles) is deliberately causal
+  rather than frozen at the training boundary: it may use any event *before*
+  the one being scored, exactly as an online scorer would, so a pair is "new"
+  only the first time it ever appears. No feature ever uses a future event.
 - **Features are split, never shuffled.** A per-event matrix is built once for
-  the whole corpus with a strictly trailing window, then cut by timestamp. The
-  windows near a split boundary are truncated at the boundary so no test event
-  contributes to a training-window statistic.
+  the whole corpus with strictly trailing windows, then cut by timestamp, so
+  no test event can contribute to a training-window statistic.
 - **Neutral fill.** If a feature cannot be computed for an event (e.g. no
   process events in a syslog-only corpus), it is filled with a documented
   neutral value rather than dropped, and its *availability* is tracked so the

@@ -1,5 +1,7 @@
 # log-anomaly
 
+[![CI](https://github.com/notzenco/log-anomaly/actions/workflows/ci.yml/badge.svg)](https://github.com/notzenco/log-anomaly/actions/workflows/ci.yml)
+
 Host-based log anomaly detection: parse authentication, process and network
 logs into one event schema, engineer causal time-windowed features, score
 events with three unsupervised models, and evaluate the result with
