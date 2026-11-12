@@ -1,0 +1,24 @@
+# Raw and derived datasets (never committed; fetch with scripts/download_data.sh)
+data/raw/
+data/processed/
+data/synthetic/
+*.log
+*.tar.gz
+*.zip
+!tests/fixtures/**
+
+# Model artifacts and generated reports
+artifacts/
+reports/figures/
+reports/*.json
+reports/*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
