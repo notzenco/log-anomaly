@@ -135,7 +135,7 @@ _NORMAL_DESTINATIONS: tuple[tuple[str, int], ...] = (
 class SyntheticConfig:
     """Knobs for the synthetic corpus. Defaults are what the report uses."""
 
-    days: int = 60
+    days: int = 120
     hosts: int = 6
     users: int = 120
     seed: int = 20240614
@@ -145,16 +145,16 @@ class SyntheticConfig:
     background_scan_ips: int = 3
     #: Share of users whose logins fall outside the 09:00-18:00 office window.
     night_shift_share: float = 0.2
-    brute_force_campaigns: int = 8
+    brute_force_campaigns: int = 16
     brute_force_attempts: int = 60
-    credential_stuffing_campaigns: int = 6
+    credential_stuffing_campaigns: int = 12
     credential_stuffing_accounts: int = 25
-    new_host_logins: int = 25
-    off_hours_logins: int = 25
-    privilege_escalation_campaigns: int = 8
-    rare_process_events: int = 20
-    exfiltration_events: int = 10
-    lateral_movement_campaigns: int = 6
+    new_host_logins: int = 60
+    off_hours_logins: int = 60
+    privilege_escalation_campaigns: int = 16
+    rare_process_events: int = 100
+    exfiltration_events: int = 60
+    lateral_movement_campaigns: int = 12
 
     @property
     def start_datetime(self) -> datetime:
