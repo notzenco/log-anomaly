@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from log_anomaly.data.synthetic import SyntheticConfig, write_corpus
 from log_anomaly.evaluation.metrics import (
     alert_volume,
     build_episodes,
@@ -15,7 +16,9 @@ from log_anomaly.evaluation.metrics import (
     ranking_metrics,
     select_threshold,
 )
+from log_anomaly.evaluation.report import evaluate_all, load_labels, results_to_frame
 from log_anomaly.evaluation.splits import time_split
+from log_anomaly.parsing import parse_file
 
 
 def stamps(days: int = 10) -> pd.Series:
@@ -98,3 +101,28 @@ def test_episodes_group_bursts_and_measure_detection() -> None:
     assert metrics["episodes_detected"] == 1
     assert metrics["episode_detection_rate"] == 0.5
     assert metrics["median_detection_delay_s"] == 7200.0
+
+
+def test_evaluate_all_runs_the_full_protocol_on_a_small_synthetic_corpus(tmp_path) -> None:
+    config = SyntheticConfig(days=10, hosts=3, users=10, seed=7, start="2024-05-06")
+    log = tmp_path / "synth.log"
+    labels_path = tmp_path / "labels.csv"
+    write_corpus(config, log, labels_path, tmp_path / "meta.json")
+    events, _ = parse_file(log, anchor_year=2024)
+    labels = load_labels(labels_path)
+
+    results = evaluate_all(events, labels, corpus="synthetic-test")
+    assert [result.model for result in results] == ["rarity", "iforest", "pca-ae"]
+    for result in results:
+        assert set(result.thresholds) == {"f1", "f5", "budget"}
+        assert 0 <= result.metrics["ranking"]["pr_auc"] <= 1
+        assert result.metrics["ranking"]["base_rate"] > 0
+        assert result.test_scores is not None and len(result.test_scores) > 0
+        serialisable = result.to_dict()
+        assert serialisable["model"] == result.model
+
+    frame = results_to_frame(results)
+    assert len(frame) == 3
+    assert {"base_rate", "pr_auc", "alerts_per_day", "alerts_per_day_budget"} <= set(
+        frame.columns
+    )
