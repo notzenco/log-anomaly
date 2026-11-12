@@ -37,6 +37,7 @@ EVENT_DTYPES: dict[str, str] = {
     "dst_port": "Int64",
     "parent_process": "string",
     "process": "string",
+    "ppid": "Int64",
     "bytes_sent": "Int64",
     "bytes_received": "Int64",
     "duration_s": "Float64",

@@ -181,7 +181,8 @@ def _classify(program: str, message: str) -> dict[str, object]:
         out["user"] = fields.get("user") or None
         out["process"] = fields.get("exe") or None
         out["parent_process"] = fields.get("ppname") or None
-        out["_ppid"] = fields.get("ppid")
+        ppid = fields.get("ppid")
+        out["ppid"] = int(ppid) if ppid is not None and ppid.isdigit() else None
         return out
 
     if family == "conn":

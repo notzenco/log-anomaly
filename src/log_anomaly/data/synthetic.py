@@ -92,7 +92,7 @@ _COMMON_USERNAMES = [
 
 #: Normal process tree: parent executable -> [(child executable, weight)].
 _NORMAL_CHILDREN: dict[str, list[tuple[str, float]]] = {
-    "sshd": [("/bin/bash", 1.0)],
+    "/usr/sbin/sshd": [("/bin/bash", 1.0)],
     "/bin/bash": [
         ("/usr/bin/python3", 0.8),
         ("/usr/bin/git", 0.5),
@@ -101,8 +101,11 @@ _NORMAL_CHILDREN: dict[str, list[tuple[str, float]]] = {
     ],
     "nginx": [("nginx", 1.0), ("/usr/bin/curl", 0.2)],
     "cron": [("/usr/sbin/logrotate", 0.5), ("/usr/bin/find", 0.4)],
-    "systemd": [("/usr/sbin/sshd", 1.0), ("/usr/bin/containerd", 0.3)],
-    "containerd": [("/usr/bin/docker", 0.3)],
+    "/usr/lib/systemd/systemd": [
+        ("/usr/sbin/sshd", 1.0),
+        ("/usr/bin/containerd", 0.3),
+    ],
+    "/usr/bin/containerd": [("/usr/bin/docker", 0.3)],
 }
 
 #: Every (parent, child) pair that legitimate traffic produces.
@@ -298,10 +301,14 @@ class _Generator:
         )
 
     def _add_process_tree(self, ts: datetime, user: str, host: str) -> None:
-        """Emit a legitimate process chain, keeping parent/child pairs valid."""
-        parent = "sshd"
-        executable = "/bin/bash"
-        for _ in range(self.random.randint(1, 3)):
+        """Emit a legitimate process chain, keeping parent/child pairs valid.
+
+        The chain starts at systemd so that every parent executable can be
+        resolved from the process table by the feature extractor.
+        """
+        parent = "/usr/lib/systemd/systemd"
+        executable = "/usr/sbin/sshd"
+        for _ in range(self.random.randint(2, 4)):
             pid = self.next_pid()
             ppid = self.program_pids.get((host, parent), [1])[-1]
             self.events.append(
@@ -440,6 +447,24 @@ class _Generator:
     def build_background(self) -> None:
         config = self.config
         start = config.start_datetime
+        for host in self.host_names:
+            # one systemd process per host, so the process tree has a root
+            pid = self.next_pid()
+            self.events.append(
+                _Event(
+                    ts=start,
+                    host=host,
+                    program="process",
+                    pid=pid,
+                    event_type="process_exec",
+                    message=f"user=root pid={pid} ppid=1 exe=/usr/lib/systemd/systemd",
+                    user="root",
+                    process="/usr/lib/systemd/systemd",
+                    parent_process="pid:1",
+                    extra={"ppid": 1},
+                )
+            )
+            self.program_pids.setdefault((host, "/usr/lib/systemd/systemd"), []).append(pid)
         for day_index in range(config.days):
             day = start + timedelta(days=day_index)
             for user in self.users:
