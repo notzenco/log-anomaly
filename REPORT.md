@@ -183,15 +183,15 @@ OpenSSH context, for the base-rate point of §2: 182 successful logins against
 in a log where "successful login" is itself one of the rarest, most
 interesting event classes.
 
-**Manual audit (Linux, `rarity`, top 30 alerts in the test window).** Each
+**Manual audit (Linux, `rarity`, top 100 alerts in the test window).** Each
 alert was read and classified as *malicious* (remote password guessing or
-probing), *benign-but-unusual*, or *noise*. All 30 are bursts of remote
+probing), *benign-but-unusual*, or *noise*. All 100 are bursts of remote
 authentication failures against `root` or system accounts (`adm`, `ftp`,
-`test`, `nobody`) — 30/30 malicious, Wilson 95% CI [0.886, 1.0]. They come
-from only 8 distinct sources, so at episode level this is 8/8, CI
-[0.676, 1.0]: weaker than the event count suggests. The audit covers only the
-head of the ranking; it says nothing about precision at depth or about
-recall. Audited rows: [docs/audit_linux_top30.csv](docs/audit_linux_top30.csv).
+`test`, `nobody`) — 100/100 malicious, Wilson 95% CI [0.963, 1.0]. They come
+from only 22 distinct sources, so at episode level this is closer to 22/22,
+CI [0.851, 1.0]: weaker than the event count suggests. The audit covers only
+the head of the ranking; it says nothing about precision at depth or about
+recall. Audited rows: [docs/audit_linux_top100.csv](docs/audit_linux_top100.csv).
 
 ## 7. Limitations
 
@@ -200,8 +200,8 @@ recall. Audited rows: [docs/audit_linux_top30.csv](docs/audit_linux_top30.csv).
    exactly the "evidence" events. Real intrusions are messier and adaptive.
    Treat every SYNTHETIC number as a regression test of the pipeline, not a
    capability claim.
-2. **No labels on real data** — the audit in §6 is one reader, 30 alerts, head
-   of one model's ranking on one corpus.
+2. **No labels on real data** — the audit in §6 is one reader, 100 events
+   from 22 sources, head of one model's ranking on one corpus.
 3. **Single-host real corpora**; per-host features are untested on real
    multi-host data. The LANL datasets would fix this but require registration
    (see design §2).

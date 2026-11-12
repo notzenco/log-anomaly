@@ -178,11 +178,14 @@ Three models, deliberately chosen to fail differently.
 
 ### 4.1 `rarity` — statistical baseline (no learning)
 
-A transparent composite: each categorical feature is converted to a rarity
-score `−log p` under the training distribution, and each count feature to a
-z-score against the training mean/variance; the composite is their sum.
-This is the "a good analyst would eyeball this" model, and it exists so the
-ML models have to beat something interpretable rather than beat nothing.
+A transparent composite: every feature is converted to a surprise score
+`−log P(X ≥ x)` under its empirical training distribution (floored so one
+feature cannot dominate), and the composite is their sum. (As implemented;
+the original draft used z-scores for count features, which behave badly on
+the many zero-inflated features here, so the empirical tail is used
+uniformly.) This is the "a good analyst would eyeball this" model, and it
+exists so the ML models have to beat something interpretable rather than
+beat nothing.
 
 ### 4.2 `iforest` — Isolation Forest
 

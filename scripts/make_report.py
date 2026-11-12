@@ -223,7 +223,7 @@ def real_data_section() -> dict[str, Any]:
                 },
             }
             if name == "linux" and model_name == "rarity":
-                top = np.argsort(scores)[::-1][:30]
+                top = np.argsort(scores)[::-1][:100]
                 explanations = trained.explain(matrix[split.test][top], top_k=3)
                 rows = []
                 for rank, (position, explanation) in enumerate(

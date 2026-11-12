@@ -84,8 +84,8 @@ is referenced and the paper is cited:
 **How to use the real data.** These corpora have **no ground-truth labels**,
 so no honest precision/recall exists for them. Use them with `train` +
 `score`, then audit the top alerts by hand, as REPORT.md §6 does for the
-Linux log (top 30 `rarity` alerts: 30/30 remote password guessing, from 8
-distinct sources). `evaluate` requires a labels CSV (`event_index,label,attack_type`)
+Linux log (top 100 `rarity` alerts: 100/100 remote password guessing, from
+22 distinct sources). `evaluate` requires a labels CSV (`event_index,label,attack_type`)
 aligned to parsed events — the synthetic corpus provides one.
 
 Candidates considered and rejected (LANL Unified/Comprehensive datasets
