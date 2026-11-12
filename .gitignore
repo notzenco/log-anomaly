@@ -7,11 +7,10 @@ data/synthetic/
 *.zip
 !tests/fixtures/**
 
-# Model artifacts and generated reports
+# Model artifacts and generated report outputs (REPORT.md and
+# docs/figures/ are the committed, curated outputs)
 artifacts/
-reports/figures/
-reports/*.json
-reports/*.csv
+reports/
 
 # Python
 __pycache__/

@@ -1,0 +1,38 @@
+{
+  "synthetic": true,
+  "config": {
+    "days": 3,
+    "hosts": 2,
+    "users": 6,
+    "seed": 11,
+    "start": "2024-05-06",
+    "background_scan_rate": 1.0,
+    "background_scan_ips": 2,
+    "night_shift_share": 0.2,
+    "brute_force_campaigns": 2,
+    "brute_force_attempts": 12,
+    "credential_stuffing_campaigns": 1,
+    "credential_stuffing_accounts": 5,
+    "new_host_logins": 4,
+    "off_hours_logins": 4,
+    "privilege_escalation_campaigns": 2,
+    "rare_process_events": 6,
+    "exfiltration_events": 4,
+    "lateral_movement_campaigns": 1
+  },
+  "events": 451,
+  "anchor_year": 2024,
+  "attack_counts": {
+    "benign": 372,
+    "credential_stuffing": 10,
+    "brute_force": 24,
+    "background_scan": 5,
+    "new_host_login": 8,
+    "data_exfiltration": 4,
+    "rare_process": 6,
+    "lateral_movement": 4,
+    "off_hours_login": 8,
+    "privilege_escalation": 10
+  },
+  "base_rate": 0.175166
+}
