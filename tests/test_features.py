@@ -133,6 +133,15 @@ def test_night_shift_user_is_not_flagged_at_night() -> None:
     assert flags.iloc[at_noon] == 1.0, "a 12:00 login is not"
 
 
+def test_erratic_account_has_no_off_hours() -> None:
+    # an account active in 19 distinct hours (00:00-18:00) has no normal
+    # hour to deviate from, so a 21:00 login must not fire off_hours
+    rows = [login((-9 + i) * 60, "alice", "web01", "10.0.0.1") for i in range(19)]
+    rows.append(login(12 * 60, "alice", "web01", "10.0.0.1"))  # 21:00
+    result = extract_features(make_events(rows))
+    assert result.features["off_hours"].iloc[-1] == 0.0
+
+
 def test_rare_process_pair_is_flagged_and_parent_resolved() -> None:
     rows = []
     for index in range(3):

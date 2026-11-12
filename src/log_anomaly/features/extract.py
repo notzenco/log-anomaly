@@ -212,11 +212,17 @@ def extract_features(
     hour_window: timedelta = timedelta(hours=1),
     short_window: timedelta = timedelta(minutes=10),
     min_profile_events: int = 8,
+    erratic_block_hours: int = 18,
 ) -> FeatureSet:
     """Build the feature matrix for ``events``.
 
     The events are sorted by time first; the returned frames share the sorted
     order, and ``event_index`` carries the original position.
+
+    ``min_profile_events`` is how much history an account needs before its
+    working hours are trusted, and ``erratic_block_hours`` disables the
+    off-hours signal for accounts whose activity is spread across the whole
+    day, because such an account has no normal hour to deviate from.
     """
     if events.empty:
         raise ValueError("cannot extract features from an empty event frame")
@@ -382,9 +388,14 @@ def extract_features(
                 if block is None:
                     block = _circular_block(user_hours_seen[user])
                     user_hour_block[user] = block
-                values["off_hours"][position] = (
-                    0.0 if _in_block(hour, block[0], block[1], margin=2) else 1.0
-                )
+                span = (block[1] - block[0]) % 24
+                if span >= erratic_block_hours:
+                    # the account is active all day; there is no normal hour
+                    values["off_hours"][position] = 0.0
+                else:
+                    values["off_hours"][position] = (
+                        0.0 if _in_block(hour, block[0], block[1], margin=2) else 1.0
+                    )
                 profile[hour] += 1
                 user_hours_seen[user].add(hour)
                 user_hour_block.pop(user, None)
