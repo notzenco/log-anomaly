@@ -66,7 +66,8 @@ def test_sudo_events_are_classified() -> None:
         "logname=alice uid=1000 euid=0 tty=pts/0 ruser=alice  user=root"
     )
     assert failure["event_type"] == "sudo_failure"
-    assert failure["user"] == "root"
+    # the actor (logname) is the account that tried to escalate, not the target
+    assert failure["user"] == "alice"
 
 
 def test_process_exec_event_is_parsed() -> None:

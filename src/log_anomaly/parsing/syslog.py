@@ -52,6 +52,7 @@ _RHOST_RE = re.compile(r"rhost=(?P<src>\S*)")
 _USER_FIELD_RE = re.compile(r"\buser=(?P<user>\S*)")
 _SUDO_FAIL_RE = re.compile(r"sudo:\s*(?P<body>.*)")
 _SUDO_ACTOR_RE = re.compile(r"^(?P<user>\S+)\s*:")
+_LOGNAME_RE = re.compile(r"\blogname=(?P<user>\S*)")
 _SESSION_OPEN_RE = re.compile(r"session opened for user\s+(?P<user>\S+)")
 _SESSION_CLOSE_RE = re.compile(r"session closed for user\s+(?P<user>\S+)")
 _DISCONNECT_RE = re.compile(r"(?:Connection closed by|Received disconnect from)\s+(?P<src>\S+)")
@@ -98,9 +99,14 @@ def _classify(program: str, message: str) -> dict[str, object]:
     if family == "sudo":
         if "incorrect password" in message or "authentication failure" in message:
             out["event_type"] = "sudo_failure"
-            user_field = _USER_FIELD_RE.search(message)
-            if user_field:
-                out["user"] = user_field.group("user") or None
+            # the actor is in logname=; user= is the account being escalated to
+            actor = _LOGNAME_RE.search(message)
+            if actor:
+                out["user"] = actor.group("user") or None
+            else:
+                user_field = _USER_FIELD_RE.search(message)
+                if user_field:
+                    out["user"] = user_field.group("user") or None
         elif "COMMAND=" in message:
             out["event_type"] = "sudo_success"
             actor = _SUDO_ACTOR_RE.match(message)
