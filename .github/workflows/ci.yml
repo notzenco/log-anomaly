@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      # Tests run entirely on the tiny committed fixture
+      # (tests/fixtures) and generated tmp corpora: no dataset
+      # downloads in CI.
+      - name: Install dependencies
+        run: uv sync --locked --python ${{ matrix.python-version }}
+      - name: Lint
+        run: uv run --locked ruff check .
+      - name: Test
+        run: uv run --locked pytest -q
